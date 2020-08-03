@@ -1,59 +1,109 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const exphbs = require("express-handlebars");
+const bodyParser = require("body-parser");
 const app = express();
+
+//import Profile Schema
+require("./Model/Profile");
+let Profile = mongoose.model("profile");
 
 /* ======================MIDDLEWARE STARTS HERE BLOCK ===========================*/
 
 app.engine("handlebars", exphbs());
 app.set("view engine", "handlebars");
 
+//bodyparser middleware
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
 /*=======================ENDS MIDDLEWARE BLOCK =========================*/
 
 /*========================SERVE STATIC ASSETS================================*/
 app.use(express.static(__dirname + "/public"));
 app.use(express.static(__dirname + "/node_modules"));
-//connect database
-let mongodb_url="mongodb+srv://chitty:<>@cluster0.7pgf5.mongodb.net/<chitty>?retryWrites=true&w=majority";
-mongoose.connect(mongodb_url,
-    {
-        useUnifiedTopology:true,
-        useNewUrlParser:true,
-    },
-    (err)=>{
-    if(err)throw err;
-    console.log("database connected!");
-    }
-    );
-//create express web server
+/*========================ENDS STATIC ASSETS BLOCK================================*/
 
+//connect database
+let mongodb_url =
+  "mongodb+srv://chitty:chitty@123@cluster0.7pgf5.mongodb.net/chitty?retryWrites=true&w=majority";
+mongoose.connect(
+  mongodb_url,
+  {
+    useUnifiedTopology: true,
+    useNewUrlParser: true,
+  },
+  (err) => {
+    if (err) throw err;
+    console.log("database connected !");
+  }
+);
 ///basic route
 app.get("/", (req, res) => {
-    res.render("./home");
-  });
-  
+  //fetch data from database
+  Profile.find({}).lean().then(profile => {
+    res.render('./home' , {profile})
+  }).catch(err => console.log(err))
+
+});
 
 /*===================ALL GET REQUEST ============*/
 // @HTTP METHODS
 //GET,POST,PUT,DELETE
 app.get("/login", (req, res) => {
-    res.render("./auth/login");
-  });
-  app.get("/register", (req, res) => {
-    res.render("./auth/register");
-  });
-  
-  app.get("/add-profile", (req, res) => {
-    res.render("./profiles/addprofile-form");
-  });
-  
-  /*===================ALL GET REQUEST ends here ============*/
-  
-  
-  //listen port
-  let port = 3000;
-  
-  app.listen(port, (err) => {
-    if (err) throw err;
-    console.log("express server is running on port number " + port);
-  });
+  res.render("./auth/login");
+});
+app.get("/register", (req, res) => {
+  res.render("./auth/register");
+});
+
+app.get("/add-profile", (req, res) => {
+  res.render("./profiles/addprofile-form");
+});
+
+/*===================ALL GET REQUEST ends here ============*/
+
+/*=============================ALL POST REQUEST CODE STARTS HERE ===========================*/
+app.post("/create-profile", (req, res) => {
+  const { firstname, lastname, phone } = req.body;
+  let errors = [];
+  if (!firstname) {
+    errors.push({ text: "Firstname is Required!" });
+  }
+  if (!lastname) {
+    errors.push({ text: "Lastname is Required!" });
+  }
+  if (!phone) {
+    errors.push({ text: "phone is Required!" });
+  }
+  if (errors.length > 0) {
+    res.render("./profiles/addprofile-form", {
+      errors,
+      firstname,
+      lastname,
+      phone,
+    });
+  } else {
+    let newProfiles = {
+      firstname,
+      lastname,
+      phone,
+    };
+    // should have to save into database
+    new Profile(newProfiles)
+      .save()
+      .then((profile) => {
+        res.redirect("/", 201, { profile });
+      })
+      .catch((err) => console.log(err));
+  }
+});
+/*=============================ALL POST REQUEST CODE STARTS HERE ===========================*/
+
+//listen port
+let port = 5000;
+
+app.listen(port, (err) => {
+  if (err) throw err;
+  console.log("express server is running on port number " + port);
+});

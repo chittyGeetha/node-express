@@ -1,10 +1,9 @@
+/*===========================Profile Schema by using mongoose ============*/
 //install npm install mongoose --save or yarn add mongoose
-const mongoose = require("mongoose"); //loading mongoose
-const Schema = mongoose.Schema; //init
+const mongoose = require("mongoose");
+const Schema = mongoose.Schema;
 
-// new Schema instance should create that should an Object
 const ProfileSchema = new Schema({
-  //blueprint of database
   firstname: {
     type: String,
     required: true,
@@ -22,3 +21,5 @@ const ProfileSchema = new Schema({
     default: Date.now,
   },
 });
+
+module.exports = mongoose.model("profile", ProfileSchema);
